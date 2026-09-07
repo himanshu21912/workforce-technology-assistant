@@ -1,0 +1,33 @@
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    profiles:
+      - full
+
+  backend:
+    volumes:
+      - ./backend/app:/app/app
+      - ./backend/alembic:/app/alembic
+      - ./backend/scripts:/app/scripts
+
+    command:
+      - sh
+      - -c
+      - |
+        alembic upgrade head &&
+        python -m scripts.seed_database &&
+        exec uvicorn app.main:app \
+          --host 0.0.0.0 \
+          --port 8000 \
+          --reload
+
+  mcp-server:
+    volumes:
+      - ./mcp-server/app:/app/app
+
+    command:
+      - python
+      - -m
+      - app.main

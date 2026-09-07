@@ -1,0 +1,164 @@
+name: workforce-assistant
+
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL}
+    container_name: workforce-frontend
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    environment:
+      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL}
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - frontend-network
+    restart: unless-stopped
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+
+    container_name: workforce-backend
+
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+
+    environment:
+      APP_NAME: Workforce Technology Assistant API
+      APP_VERSION: 0.2.0
+      ENVIRONMENT: development
+      DEBUG: "true"
+
+      API_V1_PREFIX: /api/v1
+      FRONTEND_ORIGIN: "http://localhost:${FRONTEND_PORT:-3000}"
+
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+
+      DATABASE_ECHO: "false"
+      DATABASE_POOL_SIZE: 5
+      DATABASE_MAX_OVERFLOW: 10
+      DATABASE_POOL_TIMEOUT: 30
+
+      SEED_DATABASE: "true"
+
+      REDIS_URL: redis://redis:6379/0
+
+      MCP_SERVER_URL: http://mcp-server:8001/mcp
+
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL}
+      OLLAMA_CHAT_MODEL: ${OLLAMA_CHAT_MODEL}
+      OLLAMA_EMBEDDING_MODEL: ${OLLAMA_EMBEDDING_MODEL}
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+      redis:
+        condition: service_healthy
+
+      mcp-server:
+        condition: service_started
+
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health', timeout=5)",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+    networks:
+      - frontend-network
+      - backend-network
+
+    restart: unless-stopped
+
+  mcp-server:
+    build:
+      context: ./mcp-server
+      dockerfile: Dockerfile
+    container_name: workforce-mcp-server
+    ports:
+      - "${MCP_SERVER_PORT:-8001}:8001"
+    environment:
+      SERVICE_NAME: GitHub MCP Server
+      SERVICE_VERSION: 0.1.0
+      ENVIRONMENT: development
+
+      MCP_HOST: 0.0.0.0
+      MCP_PORT: 8001
+
+      GITHUB_API_BASE_URL: https://api.github.com
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+      GITHUB_REQUEST_TIMEOUT: 10
+    networks:
+      - backend-network
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:17-alpine
+    container_name: workforce-postgres
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./infrastructure/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - backend-network
+    restart: unless-stopped
+
+  redis:
+    image: redis:8-alpine
+    container_name: workforce-redis
+    command:
+      - redis-server
+      - /usr/local/etc/redis/redis.conf
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis-data:/data
+      - ./infrastructure/redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+    networks:
+      - backend-network
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
+  redis-data:
+
+networks:
+  frontend-network:
+  backend-network:
