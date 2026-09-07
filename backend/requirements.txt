@@ -7,3 +7,4 @@ sqlalchemy[asyncio]>=2.0,<2.2
 asyncpg>=0.29,<1.0
 alembic>=1.13,<2.0
 langchain-core>=1.0,<2.0
+redis[hiredis]>=6.0,<9.0

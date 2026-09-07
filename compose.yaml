@@ -30,7 +30,7 @@ services:
 
     environment:
       APP_NAME: Workforce Technology Assistant API
-      APP_VERSION: 0.2.0
+      APP_VERSION: 0.3.0
       ENVIRONMENT: development
       DEBUG: "true"
 
@@ -51,6 +51,14 @@ services:
       SEED_DATABASE: "true"
 
       REDIS_URL: redis://redis:6379/0
+      REDIS_SOCKET_TIMEOUT: 5
+      REDIS_MAX_CONNECTIONS: 20
+
+      CONVERSATION_KEY_PREFIX: chat
+      CONVERSATION_TTL_SECONDS: 86400
+      CONVERSATION_MAX_MESSAGES: 40
+      SESSION_DEFAULT_TITLE: New conversation
+      SESSION_LIST_LIMIT: 50
 
       MCP_SERVER_URL: http://mcp-server:8001/mcp
 
@@ -94,12 +102,15 @@ services:
     build:
       context: ./mcp-server
       dockerfile: Dockerfile
+
     container_name: workforce-mcp-server
+
     ports:
       - "${MCP_SERVER_PORT:-8001}:8001"
+
     environment:
       SERVICE_NAME: GitHub MCP Server
-      SERVICE_VERSION: 0.1.0
+      SERVICE_VERSION: 0.2.0
       ENVIRONMENT: development
 
       MCP_HOST: 0.0.0.0
@@ -108,8 +119,15 @@ services:
       GITHUB_API_BASE_URL: https://api.github.com
       GITHUB_TOKEN: ${GITHUB_TOKEN:-}
       GITHUB_REQUEST_TIMEOUT: 10
+      GITHUB_USER_AGENT: workforce-technology-assistant/0.2.0
+      GITHUB_API_VERSION: 2022-11-28
+
+      GITHUB_DEFAULT_RESULT_LIMIT: 5
+      GITHUB_MAX_RESULT_LIMIT: 20
+
     networks:
       - backend-network
+
     restart: unless-stopped
 
   postgres:

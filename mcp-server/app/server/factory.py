@@ -1,7 +1,7 @@
 from fastmcp import FastMCP
 
 from app.core.config import get_settings
-from app.tools.system import get_server_information
+from app.tools import get_registered_tool_functions
 
 
 def create_mcp_server() -> FastMCP:
@@ -11,12 +11,7 @@ def create_mcp_server() -> FastMCP:
         name=settings.service_name,
     )
 
-    server.tool(
-        name="get_server_information",
-        description=(
-            "Return the name, version, environment, and status "
-            "of the GitHub MCP server."
-        ),
-    )(get_server_information)
+    for tool_function in get_registered_tool_functions():
+        server.tool(tool_function)
 
     return server

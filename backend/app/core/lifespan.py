@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from app.db.session import close_database_engine
+from app.integrations.redis import close_redis_client
 
 
 @asynccontextmanager
@@ -14,4 +15,5 @@ async def application_lifespan(
 
     yield
 
+    await close_redis_client()
     await close_database_engine()

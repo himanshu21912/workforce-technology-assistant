@@ -3,10 +3,10 @@ from app.core.config import get_settings
 
 def get_server_information() -> dict[str, str]:
     """
-    Return basic information about the GitHub MCP server.
+    Return information about the GitHub MCP server.
 
-    This diagnostic tool is used to verify that the MCP server
-    is running and able to execute tools.
+    Use this diagnostic tool to verify that the MCP server is
+    available and able to execute tools.
     """
 
     settings = get_settings()

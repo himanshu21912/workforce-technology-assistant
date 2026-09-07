@@ -6,9 +6,13 @@ settings = get_settings()
 mcp = create_mcp_server()
 
 
-if __name__ == "__main__":
+def main() -> None:
     mcp.run(
         transport="http",
         host=settings.mcp_host,
         port=settings.mcp_port,
     )
+
+
+if __name__ == "__main__":
+    main()

@@ -1,12 +1,13 @@
 from functools import lru_cache
 
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy import URL
 
 
 class Settings(BaseSettings):
     app_name: str = "Workforce Technology Assistant API"
-    app_version: str = "0.2.0"
+    app_version: str = "0.3.0"
     environment: str = "development"
     debug: bool = True
 
@@ -25,6 +26,33 @@ class Settings(BaseSettings):
     database_pool_timeout: int = 30
 
     redis_url: str = "redis://redis:6379/0"
+    redis_socket_timeout: float = Field(
+        default=5.0,
+        gt=0,
+        le=60,
+    )
+    redis_max_connections: int = Field(
+        default=20,
+        ge=1,
+        le=500,
+    )
+
+    conversation_key_prefix: str = "chat"
+    conversation_ttl_seconds: int = Field(
+        default=86400,
+        ge=60,
+    )
+    conversation_max_messages: int = Field(
+        default=40,
+        ge=2,
+        le=500,
+    )
+    session_default_title: str = "New conversation"
+    session_list_limit: int = Field(
+        default=50,
+        ge=1,
+        le=500,
+    )
 
     mcp_server_url: str = "http://mcp-server:8001/mcp"
 

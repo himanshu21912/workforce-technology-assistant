@@ -1,8 +1,11 @@
+import asyncio
+
 from fastapi import APIRouter
 from sqlalchemy import text
 
 from app.core.config import get_settings
 from app.db.session import AsyncSessionFactory
+from app.integrations.redis import check_redis
 from app.schemas.health import (
     DependencyHealth,
     HealthResponse,
@@ -20,11 +23,13 @@ async def check_postgres() -> DependencyHealth:
 
         return DependencyHealth(
             status="connected",
+            message=None,
         )
-    except Exception as exc:
+
+    except Exception as exception:
         return DependencyHealth(
             status="unavailable",
-            message=type(exc).__name__,
+            message=type(exception).__name__,
         )
 
 
@@ -35,11 +40,25 @@ async def check_postgres() -> DependencyHealth:
 )
 async def get_health() -> HealthResponse:
     settings = get_settings()
-    postgres_health = await check_postgres()
+
+    postgres_health, redis_health = await asyncio.gather(
+        check_postgres(),
+        check_redis(),
+    )
+
+    dependency_health = {
+        "postgres": postgres_health,
+        "redis": redis_health,
+    }
+
+    all_dependencies_connected = all(
+        dependency.status == "connected"
+        for dependency in dependency_health.values()
+    )
 
     overall_status = (
         "ok"
-        if postgres_health.status == "connected"
+        if all_dependencies_connected
         else "degraded"
     )
 
@@ -50,7 +69,5 @@ async def get_health() -> HealthResponse:
             version=settings.app_version,
             environment=settings.environment,
         ),
-        dependencies={
-            "postgres": postgres_health,
-        },
+        dependencies=dependency_health,
     )
