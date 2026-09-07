@@ -18,6 +18,7 @@ services:
     networks:
       - frontend-network
     restart: unless-stopped
+
   backend:
     build:
       context: ./backend
@@ -30,7 +31,7 @@ services:
 
     environment:
       APP_NAME: Workforce Technology Assistant API
-      APP_VERSION: 0.3.0
+      APP_VERSION: 0.6.0
       ENVIRONMENT: development
       DEBUG: "true"
 
@@ -60,11 +61,24 @@ services:
       SESSION_DEFAULT_TITLE: New conversation
       SESSION_LIST_LIMIT: 50
 
+      SEMANTIC_CACHE_KEY_PREFIX: semantic-cache
+      SEMANTIC_CACHE_ENABLED: "true"
+      SEMANTIC_CACHE_SIMILARITY_THRESHOLD: 0.92
+      SEMANTIC_CACHE_TTL_SECONDS: 3600
+      SEMANTIC_CACHE_MAX_RESULTS: 3
+      SEMANTIC_CACHE_MAX_ENTRIES_PER_SESSION: 100
+
       MCP_SERVER_URL: http://mcp-server:8001/mcp
 
       OLLAMA_BASE_URL: ${OLLAMA_BASE_URL}
+      OLLAMA_REQUEST_TIMEOUT: 30
       OLLAMA_CHAT_MODEL: ${OLLAMA_CHAT_MODEL}
       OLLAMA_EMBEDDING_MODEL: ${OLLAMA_EMBEDDING_MODEL}
+      OLLAMA_TEMPERATURE: 0
+      OLLAMA_NUM_CTX: 8192
+
+      AGENT_MAX_ITERATIONS: 8
+      AGENT_DEBUG: "false"
 
     depends_on:
       postgres:
@@ -87,7 +101,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 20s
+      start_period: 30s
 
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -120,7 +134,10 @@ services:
       GITHUB_TOKEN: ${GITHUB_TOKEN:-}
       GITHUB_REQUEST_TIMEOUT: 10
       GITHUB_USER_AGENT: workforce-technology-assistant/0.2.0
-      GITHUB_API_VERSION: 2022-11-28
+      # Must stay quoted: YAML reads a bare 2022-11-28 as a date, which
+      # Compose then passes through as "2022-11-28 00:00:00 +0000 UTC"
+      # and GitHub rejects with HTTP 400.
+      GITHUB_API_VERSION: "2022-11-28"
 
       GITHUB_DEFAULT_RESULT_LIMIT: 5
       GITHUB_MAX_RESULT_LIMIT: 20

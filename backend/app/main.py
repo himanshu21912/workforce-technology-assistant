@@ -1,6 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.exception_handlers import (
+    register_exception_handlers,
+)
 from app.api.v1.router import api_router
 from app.core.config import get_settings
 from app.core.lifespan import application_lifespan
@@ -23,11 +26,15 @@ def create_application() -> FastAPI:
 
     application.add_middleware(
         CORSMiddleware,
-        allow_origins=[settings.frontend_origin],
+        allow_origins=[
+            settings.frontend_origin,
+        ],
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    register_exception_handlers(application)
 
     application.include_router(
         api_router,
@@ -44,7 +51,15 @@ def create_application() -> FastAPI:
             "service": settings.app_name,
             "version": settings.app_version,
             "documentation": "/docs",
-            "health": f"{settings.api_v1_prefix}/health",
+            "health": (
+                f"{settings.api_v1_prefix}/health"
+            ),
+            "chat": (
+                f"{settings.api_v1_prefix}/ask"
+            ),
+            "sessions": (
+                f"{settings.api_v1_prefix}/sessions"
+            ),
         }
 
     return application

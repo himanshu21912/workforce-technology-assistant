@@ -1,3 +1,4 @@
+from app.services.chat_service import ChatService
 from app.services.employee_service import EmployeeService
 from app.services.session_service import SessionService
 from app.services.workforce_analytics_service import (
@@ -6,6 +7,7 @@ from app.services.workforce_analytics_service import (
 
 
 __all__ = [
+    "ChatService",
     "EmployeeService",
     "SessionService",
     "WorkforceAnalyticsService",

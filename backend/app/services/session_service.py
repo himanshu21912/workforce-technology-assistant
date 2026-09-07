@@ -39,6 +39,22 @@ class SessionService:
             title
         )
 
+    async def get_session(
+        self,
+        session_id: str,
+    ) -> ChatSession | None:
+        return await self._session_manager.get_session(
+            session_id
+        )
+
+    async def require_session(
+        self,
+        session_id: str,
+    ) -> ChatSession:
+        return await self._session_manager.require_session(
+            session_id
+        )
+
     async def list_sessions(
         self,
         limit: int | None = None,
@@ -81,8 +97,8 @@ class SessionService:
         content: str,
         metadata: dict | None = None,
     ) -> ConversationMessage:
-        return (
-            await self._conversation_history.add_user_message(
+        return await (
+            self._conversation_history.add_user_message(
                 session_id=session_id,
                 content=content,
                 metadata=metadata,
@@ -97,7 +113,8 @@ class SessionService:
         metadata: dict | None = None,
     ) -> ConversationMessage:
         return await (
-            self._conversation_history.add_assistant_message(
+            self._conversation_history
+            .add_assistant_message(
                 session_id=session_id,
                 content=content,
                 metadata=metadata,

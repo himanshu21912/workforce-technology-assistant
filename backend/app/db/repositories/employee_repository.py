@@ -56,7 +56,14 @@ class EmployeeRepository:
                     Skill.category.ilike(search_pattern),
                 )
             )
-            .distinct()
+            # GROUP BY on the primary key deduplicates the rows the
+            # skill outer joins produce. DISTINCT cannot be used here:
+            # PostgreSQL requires every ORDER BY expression to appear in
+            # the select list, and this subquery must return exactly one
+            # column to be usable with IN. Grouping by the primary key
+            # makes employees.name functionally dependent, so ordering
+            # by it stays valid.
+            .group_by(Employee.id)
             .order_by(Employee.name.asc())
             .limit(limit)
         )

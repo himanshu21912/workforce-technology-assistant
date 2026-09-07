@@ -21,23 +21,55 @@ class CreateSessionInput(BaseModel):
         if value is None:
             return None
 
-        cleaned_value = " ".join(value.strip().split())
+        normalized = " ".join(
+            value.strip().split()
+        )
 
-        return cleaned_value or None
+        return normalized or None
 
 
-class ChatSession(BaseModel):
-    session_id: UUID = Field(default_factory=uuid4)
+class UpdateSessionInput(BaseModel):
     title: str = Field(
         min_length=1,
         max_length=150,
     )
+
+    @field_validator("title")
+    @classmethod
+    def normalize_title(
+        cls,
+        value: str,
+    ) -> str:
+        normalized = " ".join(
+            value.strip().split()
+        )
+
+        if not normalized:
+            raise ValueError(
+                "Session title cannot be empty."
+            )
+
+        return normalized
+
+
+class ChatSession(BaseModel):
+    session_id: UUID = Field(
+        default_factory=uuid4
+    )
+
+    title: str = Field(
+        min_length=1,
+        max_length=150,
+    )
+
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(UTC)
     )
+
     updated_at: datetime = Field(
         default_factory=lambda: datetime.now(UTC)
     )
+
     message_count: int = Field(
         default=0,
         ge=0,
@@ -47,3 +79,8 @@ class ChatSession(BaseModel):
 class SessionHistory(BaseModel):
     session: ChatSession
     messages: list[ConversationMessage]
+
+
+class SessionListResponse(BaseModel):
+    count: int = Field(ge=0)
+    sessions: list[ChatSession]
